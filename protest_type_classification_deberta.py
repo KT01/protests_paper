@@ -155,7 +155,7 @@ for i in range(len(seeds)):
     model.to(device)
     models.append(model)
 
-batch_size = 16
+batch_size = 32
 
 # use models for inference
 predicted_labels = []
