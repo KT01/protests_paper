@@ -180,4 +180,4 @@ for i in range(0, len(acled['notes']), batch_size):
     predicted_labels.extend(batch_labels)
         
 acled['pred_labels'] = predicted_labels
-# acled.to_csv('data/acled_deberta_preds_17_06_2024.csv')
+acled.to_csv('data/acled_deberta_preds_26_01_2026.csv')
