@@ -11,14 +11,12 @@ from sklearn.preprocessing import LabelEncoder
 from datasets import Dataset
 import numpy as np
 import torch
-storage_options = {'User-Agent': 'Mozilla/5.0'}
 
 # save path for gdrive
 model_save_path = ''   # put in the link to folder to save model
 tokenizer_save_path = '' # put in the link to folder to save tokenizer
 
-acled = pd.read_csv("data/acled_ru_2018_2023_mz.csv",
-                    storage_options=storage_options)
+acled = pd.read_csv("data/acled_merged.csv")
 
 man_labeled = pd.read_csv("data/acled_manually_labelled.csv")
 man_labeled_subset = man_labeled[['event_id_cnty', 'topic_manual']]
