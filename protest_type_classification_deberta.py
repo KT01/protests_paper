@@ -25,7 +25,7 @@ man_labeled_subset = man_labeled[['event_id_cnty', 'topic_manual']]
 acled = pd.merge(acled, man_labeled_subset, on='event_id_cnty', how='left')
 
 # Convert 'event_date' to datetime format
-acled['event_date'] = pd.to_datetime(acled['event_date'], format='%d %B %Y')
+acled['event_date'] = pd.to_datetime(acled['event_date'], format='%Y-%m-%d')
 
 # Extract year for stratification
 acled['year'] = acled['event_date'].dt.year
