@@ -141,7 +141,6 @@ tokenizer.save_pretrained(tokenizer_save_path)
 # Load the tokenizer and models
 tokenizer = DebertaTokenizer.from_pretrained(tokenizer_save_path)
 
-tokenized_notes = tokenizer(list(acled['notes']), padding=True, truncation=True, return_tensors="pt")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 models = []
