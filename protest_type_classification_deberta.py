@@ -141,7 +141,12 @@ tokenizer.save_pretrained(tokenizer_save_path)
 # Load the tokenizer and models
 tokenizer = DebertaTokenizer.from_pretrained(tokenizer_save_path)
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+if torch.cuda.is_available():
+    device = torch.device("cuda")
+elif torch.backends.mps.is_available():
+    device = torch.device("mps")
+else:
+    device = torch.device("cpu")
 
 models = []
 for i in range(len(seeds)):
