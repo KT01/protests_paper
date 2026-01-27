@@ -11,6 +11,7 @@ from sklearn.preprocessing import LabelEncoder
 from datasets import Dataset
 import numpy as np
 import torch
+import os
 
 # save path for gdrive
 model_save_path = ''   # put in the link to folder to save model
