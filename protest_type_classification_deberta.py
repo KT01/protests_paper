@@ -12,6 +12,13 @@ from datasets import Dataset
 import numpy as np
 import torch
 
+# Check GPU availability
+print(f"CUDA available: {torch.cuda.is_available()}")
+if torch.cuda.is_available():
+    print(f"GPU: {torch.cuda.get_device_name(0)}")
+else:
+    print("WARNING: Training will be very slow on CPU!")
+
 # save path for gdrive
 model_save_path = ''   # put in the link to folder to save model
 tokenizer_save_path = '' # put in the link to folder to save tokenizer
@@ -89,15 +96,48 @@ training_args = TrainingArguments(
 # Tuning
 seeds = [42, 52, 62]
 trainers = []
+trained_model_paths = []
 
 for seed in seeds:
+    print(f"\n{'='*50}\nTraining model with seed {seed}\n{'='*50}")
+    
+    # Each seed gets its own output directory to prevent overwriting
+    seed_output_dir = f'./results/seed_{seed}'
+    
+    seed_training_args = TrainingArguments(
+        output_dir=seed_output_dir,
+        num_train_epochs=3,
+        per_device_train_batch_size=8,
+        per_device_eval_batch_size=8,
+        learning_rate=5e-05,
+        warmup_steps=500,
+        weight_decay=0.01,
+        logging_dir=f'./logs/seed_{seed}',
+        logging_steps=10,
+        eval_strategy="steps",
+        eval_steps=100,
+        save_strategy="steps",
+        save_steps=100,
+        load_best_model_at_end=True,
+        report_to="none",
+        save_total_limit=2,
+        fp16=torch.cuda.is_available(),  # Use mixed precision on GPU for speed
+    )
+    
     trainer = Trainer(
-        model_init=lambda: model_init(seed),
-        args=training_args,
+        model_init=(lambda s: lambda trial=None: model_init(s))(seed),  # Closure captures seed by value
+        args=seed_training_args,
         train_dataset=train_dataset,
         eval_dataset=val_dataset,
     )
     trainer.train()
+    trained_model_paths.append(seed_output_dir)
+
+# Reload the best models from saved paths for ensemble
+trainers = []
+for path in trained_model_paths:
+    model = DebertaForSequenceClassification.from_pretrained(path)
+    trainer = Trainer(model=model, args=training_args)
     trainers.append(trainer)
 
 def ensemble_predict(trainers, dataset):
