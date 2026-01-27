@@ -12,13 +12,6 @@ from datasets import Dataset
 import numpy as np
 import torch
 
-# Check GPU availability
-print(f"CUDA available: {torch.cuda.is_available()}")
-if torch.cuda.is_available():
-    print(f"GPU: {torch.cuda.get_device_name(0)}")
-else:
-    print("WARNING: Training will be very slow on CPU!")
-
 # save path for gdrive
 model_save_path = ''   # put in the link to folder to save model
 tokenizer_save_path = '' # put in the link to folder to save tokenizer
