@@ -17,7 +17,7 @@ acled_ru_2020_2024 <- readxl::read_excel(
   .name_repair = tolower
 ) |>
   mutate(
-    event_date = as_date(event_date),
+    event_date = lubridate::as_date(event_date),
     time_precision = as.double(time_precision),
     admin3 = as.character(admin3)
   ) |>
