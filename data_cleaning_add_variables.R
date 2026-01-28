@@ -26,6 +26,8 @@ acled$notes[row_ids]
 # Remove duplicates 
 acled_clean <- acled[!duplicated(acled$event_id_cnty), ]
 
+min(acled_clean$event_date)
+max(acled_clean$event_date)
 
 #### General Data Cleaning ####
 
@@ -47,8 +49,15 @@ acled_clean <- acled_clean %>%
          ),
          election_month = factor(case_when(
            month_year %in% c("2021-09", "2018-03", "2024-03", "2020-06", "2020-07") ~ 1,
+           TRUE ~ 0)),
+         # protest_invasion: Pension reform (July-Sept 2018), Const. ref (June-July 2020), Ukr invasion (Feb-March 2022)
+         protest_invasion = factor(case_when(
+           month_year %in% c("2018-07", "2018-08", "2018-09", 
+                             "2020-06", "2020-07", 
+                             "2022-02", "2022-03") ~ 1,
            TRUE ~ 0))
-  )
+  ) |> 
+  filter(year(date) <= 2024)  # Exclude jan 2025, so we have full years
 
 # recode region names
 mapping <- c(
