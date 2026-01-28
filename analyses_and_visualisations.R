@@ -42,9 +42,9 @@ stargazer(
   omit.labels = c("Federal Region FE"),              
   keep.stat = c("n", "rsq", "adj.rsq"),               
   dep.var.labels = "Police Violence",
-  covariate.labels = c("Political Protest", "Year 2019", "Year 2020", "Year 2021","Year 2022","Year 2023",
+  covariate.labels = c("Political Protest", "Year 2019", "Year 2020", "Year 2021","Year 2022","Year 2023", "Year 2024",
                        "Protest authorised", "Organisers", "Election Month", "Political x 2019", 
-                       "Political x 2020", "Political x 2021", "Political x 2022", "Political x 2023"),
+                       "Political x 2020", "Political x 2021", "Political x 2022", "Political x 2023", "Political x 2024"),
   
   out="tables/police_violence_main.tex"
 )
@@ -114,9 +114,9 @@ stargazer(model_2,
           omit.labels = c("Federal Region FE"),              # Optional: Custom labels for omitted variables
           keep.stat = c("n", "aic", "ll"),                   # For logistic models, show sample size, AIC, log-likelihood
           dep.var.labels = "Police Violence (Logit)",
-          covariate.labels = c("Political Protest", "Year 2019", "Year 2020", "Year 2021","Year 2022","Year 2023",
+          covariate.labels = c("Political Protest", "Year 2019", "Year 2020", "Year 2021","Year 2022","Year 2023", "Year 2024",
                                "Protest authorised", "Organisers", "Election Month", "Political x 2019", 
-                               "Political x 2020", "Political x 2021", "Political x 2022", "Political x 2023"),
+                               "Political x 2020", "Political x 2021", "Political x 2022", "Political x 2023", "Political x 2024"),
           out="tables/police_violence_robustness.tex"
 )
 
