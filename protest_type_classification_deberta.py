@@ -14,8 +14,8 @@ import torch
 import os
 
 # save path for gdrive
-model_save_path = ''   # put in the link to folder to save model
-tokenizer_save_path = '' # put in the link to folder to save tokenizer
+model_save_base_path = 'models/'   # put in the link to folder to save model
+tokenizer_save_path = 'tokenizer/' # put in the link to folder to save tokenizer
 
 acled = pd.read_csv("data/acled_merged.csv")
 
