@@ -87,44 +87,62 @@ training_args = TrainingArguments(
     report_to="none"
 )
 
+import json
+
+def get_best_checkpoint(seed_output_dir):
+    """Find the best checkpoint from checkpoint-900's trainer_state.json"""
+    state_path = os.path.join(seed_output_dir, 'checkpoint-900', 'trainer_state.json')
+    if os.path.exists(state_path):
+        with open(state_path, 'r') as f:
+            best_ckpt = json.load(f).get('best_model_checkpoint')
+        if best_ckpt and os.path.exists(best_ckpt):
+            return best_ckpt
+    return None
+
 # Tuning
 seeds = [42, 52, 62]
-trainers = []
 trained_model_paths = []
 
 for seed in seeds:
-    print(f"\n{'='*50}\nTraining model with seed {seed}\n{'='*50}")
-    
-    # Each seed gets its own output directory to prevent overwriting
     seed_output_dir = f'./results/seed_{seed}'
+    best_ckpt = get_best_checkpoint(seed_output_dir)
     
-    seed_training_args = TrainingArguments(
-        output_dir=seed_output_dir,
-        num_train_epochs=3,
-        per_device_train_batch_size=8,
-        per_device_eval_batch_size=8,
-        learning_rate=5e-05,
-        warmup_steps=500,
-        weight_decay=0.01,
-        logging_dir=f'./logs/seed_{seed}',
-        logging_steps=10,
-        eval_strategy="steps",
-        eval_steps=100,
-        save_strategy="steps",
-        save_steps=100,
-        load_best_model_at_end=True,
-        report_to="none",
-        save_total_limit=2,
-        fp16=torch.cuda.is_available(),  # Use mixed precision on GPU for speed
-    )
+    if best_ckpt:
+        print(f"\n{'='*50}\nSeed {seed}: Loading best checkpoint {best_ckpt}\n{'='*50}")
+        model = DebertaForSequenceClassification.from_pretrained(best_ckpt)
+        model.save_pretrained(seed_output_dir)
+    else:
+        print(f"\n{'='*50}\nTraining model with seed {seed}\n{'='*50}")
+        
+        seed_training_args = TrainingArguments(
+            output_dir=seed_output_dir,
+            num_train_epochs=3,
+            per_device_train_batch_size=8,
+            per_device_eval_batch_size=8,
+            learning_rate=5e-05,
+            warmup_steps=500,
+            weight_decay=0.01,
+            logging_dir=f'./logs/seed_{seed}',
+            logging_steps=10,
+            eval_strategy="steps",
+            eval_steps=100,
+            save_strategy="steps",
+            save_steps=100,
+            load_best_model_at_end=True,
+            report_to="none",
+            save_total_limit=2,
+            fp16=torch.cuda.is_available(),
+        )
+        
+        trainer = Trainer(
+            model_init=(lambda s: lambda trial=None: model_init(s))(seed),
+            args=seed_training_args,
+            train_dataset=train_dataset,
+            eval_dataset=val_dataset,
+        )
+        trainer.train()
+        trainer.save_model(seed_output_dir)
     
-    trainer = Trainer(
-        model_init=(lambda s: lambda trial=None: model_init(s))(seed),  # Closure captures seed by value
-        args=seed_training_args,
-        train_dataset=train_dataset,
-        eval_dataset=val_dataset,
-    )
-    trainer.train()
     trained_model_paths.append(seed_output_dir)
 
 # Reload the best models from saved paths for ensemble
