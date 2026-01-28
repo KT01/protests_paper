@@ -266,4 +266,4 @@ acled_clean <- acled_clean %>%
 
 
 #### Save Cleaned Data ####
-write_excel_csv(acled_clean, "data/acled_with_dvs_and_controls_16_07_2024_utf8byte.csv")
+write_excel_csv(acled_clean, "data/acled_with_dvs_and_controls.csv")
