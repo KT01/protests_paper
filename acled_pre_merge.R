@@ -6,7 +6,7 @@ acled_ru_2018_2023_mz <- read_csv(
   col_types = cols(admin3 = col_character())
 ) |>
   # 14 November 2023
-  mutate(event_date = dmy(event_date)) |>
+  mutate(event_date = lubridate::dmy(event_date)) |>
   # Contains problematic values and is not used
   select(-civilian_targeting)
 
