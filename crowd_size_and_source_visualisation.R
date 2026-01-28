@@ -18,7 +18,7 @@ acled_filtered_for_viz = acled_clean %>%
 
 acled_filtered_for_viz <- acled_filtered_for_viz %>%
   mutate(date = as.Date(event_date)) %>%  
-  filter(date >= as.Date("2021-01-01") & date <= as.Date("2025-01-01")) %>%
+  filter(date >= as.Date("2021-01-01") & date <= as.Date("2024-12-31")) %>%
   mutate(month = floor_date(date, unit = "month"))
 
 
