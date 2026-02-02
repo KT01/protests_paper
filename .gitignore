@@ -1,0 +1,6 @@
+.venv/*
+.vscode/*
+.DS_Store
+results/*
+models/*
+tokenizer/*

@@ -11,14 +11,13 @@ from sklearn.preprocessing import LabelEncoder
 from datasets import Dataset
 import numpy as np
 import torch
-storage_options = {'User-Agent': 'Mozilla/5.0'}
+import os
 
 # save path for gdrive
-model_save_path = ''   # put in the link to folder to save model
-tokenizer_save_path = '' # put in the link to folder to save tokenizer
+model_save_base_path = 'models/'   # put in the link to folder to save model
+tokenizer_save_path = 'tokenizer/' # put in the link to folder to save tokenizer
 
-acled = pd.read_csv("data/acled_ru_2018_2023_mz.csv",
-                    storage_options=storage_options)
+acled = pd.read_csv("data/acled_merged.csv")
 
 man_labeled = pd.read_csv("data/acled_manually_labelled.csv")
 man_labeled_subset = man_labeled[['event_id_cnty', 'topic_manual']]
@@ -27,7 +26,7 @@ man_labeled_subset = man_labeled[['event_id_cnty', 'topic_manual']]
 acled = pd.merge(acled, man_labeled_subset, on='event_id_cnty', how='left')
 
 # Convert 'event_date' to datetime format
-acled['event_date'] = pd.to_datetime(acled['event_date'], format='%d %B %Y')
+acled['event_date'] = pd.to_datetime(acled['event_date'], format='%Y-%m-%d')
 
 # Extract year for stratification
 acled['year'] = acled['event_date'].dt.year
@@ -88,18 +87,69 @@ training_args = TrainingArguments(
     report_to="none"
 )
 
+import json
+
+def get_best_checkpoint(seed_output_dir):
+    """Find the best checkpoint from checkpoint-900's trainer_state.json"""
+    state_path = os.path.join(seed_output_dir, 'checkpoint-900', 'trainer_state.json')
+    if os.path.exists(state_path):
+        with open(state_path, 'r') as f:
+            best_ckpt = json.load(f).get('best_model_checkpoint')
+        if best_ckpt and os.path.exists(best_ckpt):
+            return best_ckpt
+    return None
+
 # Tuning
 seeds = [42, 52, 62]
-trainers = []
+trained_model_paths = []
 
 for seed in seeds:
-    trainer = Trainer(
-        model_init=lambda: model_init(seed),
-        args=training_args,
-        train_dataset=train_dataset,
-        eval_dataset=val_dataset,
-    )
-    trainer.train()
+    seed_output_dir = f'./results/seed_{seed}'
+    best_ckpt = get_best_checkpoint(seed_output_dir)
+    
+    if best_ckpt:
+        print(f"\n{'='*50}\nSeed {seed}: Loading best checkpoint {best_ckpt}\n{'='*50}")
+        model = DebertaForSequenceClassification.from_pretrained(best_ckpt)
+        model.save_pretrained(seed_output_dir)
+    else:
+        print(f"\n{'='*50}\nTraining model with seed {seed}\n{'='*50}")
+        
+        seed_training_args = TrainingArguments(
+            output_dir=seed_output_dir,
+            num_train_epochs=3,
+            per_device_train_batch_size=8,
+            per_device_eval_batch_size=8,
+            learning_rate=5e-05,
+            warmup_steps=500,
+            weight_decay=0.01,
+            logging_dir=f'./logs/seed_{seed}',
+            logging_steps=10,
+            eval_strategy="steps",
+            eval_steps=100,
+            save_strategy="steps",
+            save_steps=100,
+            load_best_model_at_end=True,
+            report_to="none",
+            save_total_limit=2,
+            fp16=torch.cuda.is_available(),
+        )
+        
+        trainer = Trainer(
+            model_init=(lambda s: lambda trial=None: model_init(s))(seed),
+            args=seed_training_args,
+            train_dataset=train_dataset,
+            eval_dataset=val_dataset,
+        )
+        trainer.train()
+        trainer.save_model(seed_output_dir)
+    
+    trained_model_paths.append(seed_output_dir)
+
+# Reload the best models from saved paths for ensemble
+trainers = []
+for path in trained_model_paths:
+    model = DebertaForSequenceClassification.from_pretrained(path)
+    trainer = Trainer(model=model, args=training_args)
     trainers.append(trainer)
 
 def ensemble_predict(trainers, dataset):
@@ -143,8 +193,12 @@ tokenizer.save_pretrained(tokenizer_save_path)
 # Load the tokenizer and models
 tokenizer = DebertaTokenizer.from_pretrained(tokenizer_save_path)
 
-tokenized_notes = tokenizer(list(acled['notes']), padding=True, truncation=True, return_tensors="pt")
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+if torch.cuda.is_available():
+    device = torch.device("cuda")
+elif torch.backends.mps.is_available():
+    device = torch.device("mps")
+else:
+    device = torch.device("cpu")
 
 models = []
 for i in range(len(seeds)):
@@ -153,7 +207,7 @@ for i in range(len(seeds)):
     model.to(device)
     models.append(model)
 
-batch_size = 16
+batch_size = 32
 
 # use models for inference
 predicted_labels = []
@@ -178,4 +232,4 @@ for i in range(0, len(acled['notes']), batch_size):
     predicted_labels.extend(batch_labels)
         
 acled['pred_labels'] = predicted_labels
-# acled.to_csv('data/acled_deberta_preds_17_06_2024.csv')
+acled.to_csv('data/acled_deberta_preds_26_01_2026.csv')
